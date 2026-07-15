@@ -167,7 +167,7 @@ The image below demonstrates a successfully scanned clean file.
 
 The image below demonstrates detection of the **EICAR** antivirus test file.
 
-![Scanned clean file](docs/images/clamavinfected.png)
+![Scanned infected file](docs/images/clamavInfected.png)
 
 ---
 
