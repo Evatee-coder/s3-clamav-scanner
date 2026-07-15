@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ClamAV scanner runtime artifacts (downloaded files, virus DB, logs, CVD certs)
+clamav/tmp/
+clamav/db/
+clamav/logs/
+clamav/certs/
+
+# Portfolio deliverables (not repo documentation)
+*.docx

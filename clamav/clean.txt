@@ -1,0 +1,7 @@
+This is a clean text file for testing ClamAV.
+It contains no malicious content.
+
+Sample content:
+- Line 1: Hello World
+- Line 2: Testing antivirus scanning
+- Line 3: This file should pass the scan
