@@ -13,7 +13,7 @@
 ![ClamAV](https://img.shields.io/badge/ClamAV-Malware%20Scanner-red)
 ![boto3](https://img.shields.io/badge/boto3-AWS%20SDK-yellow)
 ![Linux](https://img.shields.io/badge/Linux-Ubuntu-black?logo=ubuntu)
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
+
 
 ---
 
@@ -57,42 +57,8 @@ The project was designed with secure configuration, reusable automation, and por
 
 > **AWS Architecture Diagram**
 
-Replace the image below with your architecture diagram.
-
 ```markdown
 ![Architecture](docs/images/s3-malware-scanner-architecture.png)
-```
-
----
-
-### High-Level Architecture
-
-```text
-                   User Upload
-                        │
-                        ▼
-          Amazon S3 Landing Bucket
-                        │
-                        ▼
-             Python Malware Scanner
-                        │
-                        ▼
-                 ClamAV Engine
-                        │
-        ┌───────────────┼────────────────┐
-        │               │                │
-        ▼               ▼                ▼
-     CLEAN         INFECTED          ERROR
-        │               │                │
-        ▼               ▼                ▼
- Amazon S3        Amazon SQS       Manual Review
- Clean Bucket      Notification
-
-                ▼
-       Update Object Tags
-
- Scanned=True
- Result=CLEAN | INFECTED | ERROR
 ```
 
 ---
@@ -133,7 +99,7 @@ Downstream Applications
 Virus definitions can be updated independently using
 
 ```bash
-python3 main2.py update
+python3 main.py update
 ```
 
 ---
@@ -223,10 +189,6 @@ The screenshots below demonstrate the complete malware-scanning workflow.
 ---
 
 ## AWS Architecture
-
-```markdown
-docs/images/s3-malware-scanner-architecture.png
-```
 
 ```markdown
 ![Architecture](docs/images/s3-malware-scanner-architecture.png)
@@ -398,33 +360,9 @@ docs/images/freshclam-update.png
 
 # Repository Structure
 
-```text
-.
-├── clamav
-│   ├── certs
-│   ├── main2.py
-│   ├── requirements.txt
-│   └── .env.example
-│
-├── docs
-│   └── images
-│       ├── s3-malware-scanner-architecture.png
-│       ├── clean-scan-terminal.png
-│       ├── landing-bucket.png
-│       ├── clean-bucket.png
-│       ├── clean-tags.png
-│       ├── infected-scan-terminal.png
-│       ├── sqs-message.png
-│       ├── infected-tags.png
-│       ├── clamav-clean.png
-│       ├── clamav-eicar.png
-│       └── freshclam-update.png
-│
-├── LICENSE
-├── README.md
-└── .gitignore
+```markdown
+![Repo Structure](docs/images/repo-structure.png)
 ```
-
 ---
 
 # Installation
@@ -482,7 +420,7 @@ clamscan --version
 ## Update Virus Definitions
 
 ```bash
-python3 main2.py update
+python3 main.py update
 ```
 
 or
@@ -626,7 +564,7 @@ The project exposes two commands.
 ## Scan Files
 
 ```bash
-python3 main2.py scan
+python3 main.py scan
 ```
 
 Example output
@@ -652,7 +590,7 @@ Done.
 ## Update Virus Definitions
 
 ```bash
-python3 main2.py update
+python3 main.py update
 ```
 
 Example
@@ -820,9 +758,9 @@ This pattern prevents downstream applications from accessing files before they h
 The application uses Python's `argparse` module to expose a simple interface.
 
 ```bash
-python3 main2.py scan
+python3 main.py scan
 
-python3 main2.py update
+python3 main.py update
 ```
 
 Advantages
@@ -1089,13 +1027,13 @@ cp .env.example .env
 Update the ClamAV virus database.
 
 ```bash
-python3 main2.py update
+python3 main.py update
 ```
 
 Run the scanner.
 
 ```bash
-python3 main2.py scan
+python3 main.py scan
 ```
 
 ---
@@ -1110,14 +1048,6 @@ If you identify a bug, have an enhancement idea, or would like to extend the pro
 2. Create a feature branch.
 3. Commit your changes.
 4. Open a Pull Request.
-
----
-
-# License
-
-This project is licensed under the MIT License.
-
-See the `LICENSE` file for details.
 
 ---
 
