@@ -54,13 +54,7 @@ The project was designed with secure configuration, reusable automation, and por
 ---
 
 # Architecture
-
-> **AWS Architecture Diagram**
-
-```markdown
 ![Architecture](docs/images/s3-malware-scanner-architecture.png)
-```
-
 ---
 
 # Project Workflow
@@ -189,24 +183,16 @@ The screenshots below demonstrate the complete malware-scanning workflow.
 ---
 
 ## AWS Architecture
-
-```markdown
 ![Architecture](docs/images/s3-malware-scanner-architecture.png)
-```
+
 
 ---
 
 ## Clean File Scan
 
 Upload
-
-```markdown
-docs/images/clean-scan-terminal.png
-```
-
-```markdown
 ![Clean Scan](docs/images/clean-scan-terminal.png)
-```
+
 
 Expected screenshot:
 
@@ -219,38 +205,18 @@ Expected screenshot:
 ---
 
 ## Landing Bucket
-
-```markdown
-docs/images/landing-bucket.png
-```
-
-```markdown
 ![Landing Bucket](docs/images/landing-bucket.png)
-```
+
 
 ---
 
 ## Clean Bucket
-
-```markdown
-docs/images/clean-bucket.png
-```
-
-```markdown
 ![Clean Bucket](docs/images/clean-bucket.png)
-```
-
 ---
 
 ## Clean Object Tags
-
-```markdown
-docs/images/clean-tags.png
-```
-
-```markdown
 ![Clean Tags](docs/images/clean-tags.png)
-```
+
 
 Expected values
 
@@ -262,14 +228,8 @@ Result=CLEAN
 ---
 
 ## Infected File Scan
-
-```markdown
-docs/images/infected-scan-terminal.png
-```
-
-```markdown
 ![Infected Scan](docs/images/infected-scan-terminal.png)
-```
+
 
 Expected screenshot
 
@@ -281,14 +241,8 @@ Expected screenshot
 ---
 
 ## Amazon SQS Message
-
-```markdown
-docs/images/sqs-message.png
-```
-
-```markdown
 ![Amazon SQS](docs/images/sqs-message.png)
-```
+
 
 Expected message body
 
@@ -302,14 +256,8 @@ Expected message body
 ---
 
 ## Infected Object Tags
-
-```markdown
-docs/images/infected-tags.png
-```
-
-```markdown
 ![Infected Tags](docs/images/infected-tags.png)
-```
+
 
 Expected values
 
@@ -323,46 +271,14 @@ Result=INFECTED
 ## ClamAV Detection
 
 Clean file
-
-```markdown
-docs/images/clamav-clean.png
-```
-
-```markdown
 ![ClamAV Clean](docs/images/clamav-clean.png)
-```
 
----
-
-EICAR detection
-
-```markdown
-docs/images/clamav-eicar.png
-```
-
-```markdown
-![ClamAV EICAR](docs/images/clamav-eicar.png)
-```
-
----
-
-## Virus Database Update
-
-```markdown
-docs/images/freshclam-update.png
-```
-
-```markdown
-![freshclam](docs/images/freshclam-update.png)
-```
-
----
 
 # Repository Structure
 
-```markdown
+
 ![Repo Structure](docs/images/repo-structure.png)
-```
+
 ---
 
 # Installation
@@ -789,21 +705,6 @@ During development, several practical challenges were encountered and resolved.
 
 ---
 
-# Screenshots for this Section
-
-Add the following screenshots to strengthen the implementation section.
-
-| Screenshot | File |
-|------------|------|
-| Environment Variables | `docs/images/env-file.png` |
-| AWS CLI Identity | `docs/images/aws-identity.png` |
-| ClamAV Update | `docs/images/freshclam-update.png` |
-| Clean Scan | `docs/images/clean-scan-terminal.png` |
-| Infected Scan | `docs/images/infected-scan-terminal.png` |
-| Object Tags | `docs/images/object-tags.png` |
-| Amazon SQS Message | `docs/images/sqs-message.png` |
-
----
 
 # Security Considerations
 
