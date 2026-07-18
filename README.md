@@ -1,198 +1,615 @@
 # 🛡️ Automated Amazon S3 Malware Scanner with ClamAV
 
-<p align="center">
-
-![AWS](https://img.shields.io/badge/AWS-Amazon%20S3-orange?logo=amazonaws)
-![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)
-![ClamAV](https://img.shields.io/badge/Security-ClamAV-green)
-![Boto3](https://img.shields.io/badge/AWS%20SDK-boto3-yellow)
-![Cloud Security](https://img.shields.io/badge/Cloud-Security-red)
-![Status](https://img.shields.io/badge/Project-Portfolio-success)
-
-</p>
-
-An automated malware scanning solution for **Amazon S3** that scans uploaded files using **ClamAV** and stores scan results directly as **S3 Object Tags**, enabling downstream applications to determine whether an object is safe without relying on an external database.
-
-Designed as the foundation for an event-driven, cloud-native malware scanning pipeline.
+> **An AWS cloud-native malware scanning pipeline that automatically inspects files uploaded to Amazon S3, routes trusted files, alerts downstream services of malicious uploads, and records scan results using Amazon S3 Object Tags.**
 
 ---
 
-# 📚 Table of Contents
+## Badges
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Architecture](#-architecture)
-- [Project Workflow](#-project-workflow)
-- [Project Screenshots](#-project-screenshots)
-- [How It Works](#-how-it-works)
-- [Tech Stack](#-tech-stack)
-- [Engineering Challenges](#-engineering-challenges)
-- [Production Roadmap](#-production-roadmap)
-- [Skills Demonstrated](#-skills-demonstrated)
-- [Getting Started](#-getting-started)
-- [Why This Project?](#-why-this-project)
-- [Author](#-author)
+![AWS](https://img.shields.io/badge/AWS-Cloud-orange?logo=amazonaws)
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
+![Amazon S3](https://img.shields.io/badge/Amazon-S3-green?logo=amazons3)
+![Amazon SQS](https://img.shields.io/badge/Amazon-SQS-ff9900?logo=amazonaws)
+![ClamAV](https://img.shields.io/badge/ClamAV-Malware%20Scanner-red)
+![boto3](https://img.shields.io/badge/boto3-AWS%20SDK-yellow)
+![Linux](https://img.shields.io/badge/Linux-Ubuntu-black?logo=ubuntu)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 ---
 
-# 📖 Overview
+# Table of Contents
 
-Malicious file uploads are a common security concern for cloud applications.
+- [Project Overview](#project-overview)
+- [Architecture](#architecture)
+- [Project Workflow](#project-workflow)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [Architecture Components](#architecture-components)
+- [Project Demonstration](#project-demonstration)
+- [Repository Structure](#repository-structure)
 
-This project demonstrates how uploaded files can be automatically scanned using **ClamAV**, with the scan outcome written directly back onto the S3 object as metadata using **Amazon S3 Object Tags**.
+---
 
-Instead of maintaining a separate scan-results database, downstream services can simply inspect the object's tags to determine whether it has been scanned and whether it is safe for processing.
+# Project Overview
 
-The current implementation validates the core scanning workflow:
+Modern cloud applications frequently allow users to upload documents, images, PDFs, archives, and other files into Amazon S3.
 
+Without validating those uploads, malicious files may enter downstream systems, increasing the risk of malware propagation, compromised workloads, and unauthorized access.
+
+This project demonstrates how to build a lightweight cloud-native malware scanning pipeline using AWS managed services and Python.
+
+Every uploaded object is automatically:
+
+- downloaded from Amazon S3
+- scanned using ClamAV
+- classified as **CLEAN**, **INFECTED**, or **ERROR**
+- routed according to the scan result
+- tagged with its scan status
+- capable of notifying downstream applications through Amazon SQS
+
+Unlike many demonstration projects that simply print scan results, this implementation models a production-oriented workflow by separating untrusted and trusted files, publishing asynchronous notifications, and recording scan metadata directly on the S3 object.
+
+The project was designed with secure configuration, reusable automation, and portability in mind.
+
+---
+
+# Architecture
+
+> **AWS Architecture Diagram**
+
+Replace the image below with your architecture diagram.
+
+```markdown
+![Architecture](docs/images/s3-malware-scanner-architecture.png)
 ```
-Download → Scan → Tag
-```
-
-while providing the foundation for a fully event-driven, serverless malware scanning architecture.
 
 ---
 
-# ⭐ Key Features
+### High-Level Architecture
 
-- Automated malware scanning with ClamAV
-- Downloads files directly from Amazon S3
-- Detects clean, infected, and scan error states
-- Stores scan results as Amazon S3 Object Tags
-- Uses the industry-standard EICAR antivirus test file
-- Lightweight architecture with no external database
-- Production-oriented cloud security workflow
-- Designed for future event-driven deployments
-
----
-
-# 🏗 Architecture
-
-```
-                    Amazon S3
-
+```text
+                   User Upload
                         │
                         ▼
-
-                Download Object
-
+          Amazon S3 Landing Bucket
                         │
                         ▼
-
-                 ClamAV Scanner
-
+             Python Malware Scanner
                         │
                         ▼
-
-              Determine Scan Result
-
+                 ClamAV Engine
                         │
-                        ▼
+        ┌───────────────┼────────────────┐
+        │               │                │
+        ▼               ▼                ▼
+     CLEAN         INFECTED          ERROR
+        │               │                │
+        ▼               ▼                ▼
+ Amazon S3        Amazon SQS       Manual Review
+ Clean Bucket      Notification
 
-             Update Amazon S3 Tags
+                ▼
+       Update Object Tags
 
-      Scanned = True
-      Result   = CLEAN | INFECTED | ERROR
+ Scanned=True
+ Result=CLEAN | INFECTED | ERROR
 ```
 
 ---
 
-# 🔄 Project Workflow
+# Project Workflow
 
+```text
+Upload File
+      │
+      ▼
+Landing Bucket (Amazon S3)
+      │
+      ▼
+Download Object
+      │
+      ▼
+Scan with ClamAV
+      │
+      ▼
+Interpret Exit Code
+      │
+      ▼
+Route File
+      │
+      ├──────────────► Clean Bucket
+      │
+      ├──────────────► Amazon SQS Alert
+      │
+      └──────────────► Error Handling
+      │
+      ▼
+Update Amazon S3 Object Tags
+      │
+      ▼
+Downstream Applications
 ```
-User Uploads File
 
-        │
+Virus definitions can be updated independently using
 
-        ▼
-
- Amazon S3 Bucket
-
-        │
-
-        ▼
-
- Download Object
-
-        │
-
-        ▼
-
-   ClamAV Scan
-
-        │
-
-        ▼
-
- Interpret Exit Code
-
-        │
-
-        ▼
-
- Update Object Tags
-
-        │
-
-        ▼
-
- Downstream Services
-Validate Object Status
+```bash
+python3 main2.py update
 ```
 
 ---
-<!--
-# 📸 Project Screenshots
 
-## Architecture Diagram
+# Key Features
 
-> *(Insert architecture diagram here)*
+## Security
 
+- Automated malware detection using ClamAV
+- Secure separation of trusted and untrusted files
+- Amazon S3 Object Tags for object status
+- EICAR antivirus verification
+- Secure environment-variable configuration
+- No hardcoded AWS account IDs
+- No hardcoded queue URLs
+
+---
+
+## AWS
+
+- Amazon S3 Landing Bucket
+- Amazon S3 Clean Bucket
+- Amazon SQS Notification Queue
+- boto3 SDK integration
+- Dynamic queue discovery
+- AWS CLI verification
+
+---
+
+## Python
+
+- argparse CLI
+- subprocess management
+- object tagging
+- file processing
+- exception handling
+- logging
+- environment variables
+
+---
+
+## Cloud Engineering
+
+- Multi-bucket workflow
+- Queue-driven notifications
+- Object metadata management
+- Production-oriented workflow
+- Portable configuration
+- Cloud-native architecture
+
+---
+
+# Technology Stack
+
+| Layer | Technology |
+|---------|------------|
+| Language | Python 3 |
+| SDK | boto3 |
+| Malware Scanner | ClamAV |
+| Storage | Amazon S3 |
+| Messaging | Amazon SQS |
+| Metadata | Amazon S3 Object Tags |
+| CLI | argparse |
+| Operating System | Ubuntu Linux |
+| Virus Updates | freshclam |
+
+---
+
+# Architecture Components
+
+| Component | Responsibility |
+|------------|----------------|
+| Landing Bucket | Receives uploaded files awaiting inspection |
+| Python Scanner | Downloads and scans files |
+| ClamAV | Detects malware signatures |
+| Clean Bucket | Stores verified clean files |
+| Amazon SQS | Publishes infected-file notifications |
+| Amazon S3 Object Tags | Stores scan status metadata |
+| freshclam | Updates virus definitions |
+
+---
+
+# Project Demonstration
+
+The screenshots below demonstrate the complete malware-scanning workflow.
+
+---
+
+## AWS Architecture
+
+```markdown
+docs/images/s3-malware-scanner-architecture.png
 ```
-docs/images/architecture.png
+
+```markdown
+![Architecture](docs/images/s3-malware-scanner-architecture.png)
 ```
--->
 
 ---
 
 ## Clean File Scan
 
-The image below demonstrates a successfully scanned clean file.
+Upload
 
-![Scanned clean file](docs/images/clamavClean.png)
+```markdown
+docs/images/clean-scan-terminal.png
+```
+
+```markdown
+![Clean Scan](docs/images/clean-scan-terminal.png)
+```
+
+Expected screenshot:
+
+- Download successful
+- Scan completed
+- CLEAN detected
+- Uploaded to clean bucket
+- Object tagged
+
+---
+
+## Landing Bucket
+
+```markdown
+docs/images/landing-bucket.png
+```
+
+```markdown
+![Landing Bucket](docs/images/landing-bucket.png)
+```
+
+---
+
+## Clean Bucket
+
+```markdown
+docs/images/clean-bucket.png
+```
+
+```markdown
+![Clean Bucket](docs/images/clean-bucket.png)
+```
+
+---
+
+## Clean Object Tags
+
+```markdown
+docs/images/clean-tags.png
+```
+
+```markdown
+![Clean Tags](docs/images/clean-tags.png)
+```
+
+Expected values
+
+```
+Scanned=True
+Result=CLEAN
+```
 
 ---
 
 ## Infected File Scan
 
-The image below demonstrates detection of the **EICAR** antivirus test file.
+```markdown
+docs/images/infected-scan-terminal.png
+```
 
-![Scanned infected file](docs/images/clamavInfected.png)
+```markdown
+![Infected Scan](docs/images/infected-scan-terminal.png)
+```
+
+Expected screenshot
+
+- Download completed
+- ClamAV detected malware
+- Amazon SQS notification published
+- Object tagged
 
 ---
 
-## AWS CLI Verification
+## Amazon SQS Message
 
-Example showing object tags retrieved directly from Amazon S3.
-
-```
-aws s3api get-object-tagging \
---bucket my-bucket \
---key sample.txt
+```markdown
+docs/images/sqs-message.png
 ```
 
-Example output
+```markdown
+![Amazon SQS](docs/images/sqs-message.png)
+```
+
+Expected message body
 
 ```json
 {
-  "TagSet": [
+  "file":"tmp/dirty.txt",
+  "status":"INFECTED"
+}
+```
+
+---
+
+## Infected Object Tags
+
+```markdown
+docs/images/infected-tags.png
+```
+
+```markdown
+![Infected Tags](docs/images/infected-tags.png)
+```
+
+Expected values
+
+```
+Scanned=True
+Result=INFECTED
+```
+
+---
+
+## ClamAV Detection
+
+Clean file
+
+```markdown
+docs/images/clamav-clean.png
+```
+
+```markdown
+![ClamAV Clean](docs/images/clamav-clean.png)
+```
+
+---
+
+EICAR detection
+
+```markdown
+docs/images/clamav-eicar.png
+```
+
+```markdown
+![ClamAV EICAR](docs/images/clamav-eicar.png)
+```
+
+---
+
+## Virus Database Update
+
+```markdown
+docs/images/freshclam-update.png
+```
+
+```markdown
+![freshclam](docs/images/freshclam-update.png)
+```
+
+---
+
+# Repository Structure
+
+```text
+.
+├── clamav
+│   ├── certs
+│   ├── main2.py
+│   ├── requirements.txt
+│   └── .env.example
+│
+├── docs
+│   └── images
+│       ├── s3-malware-scanner-architecture.png
+│       ├── clean-scan-terminal.png
+│       ├── landing-bucket.png
+│       ├── clean-bucket.png
+│       ├── clean-tags.png
+│       ├── infected-scan-terminal.png
+│       ├── sqs-message.png
+│       ├── infected-tags.png
+│       ├── clamav-clean.png
+│       ├── clamav-eicar.png
+│       └── freshclam-update.png
+│
+├── LICENSE
+├── README.md
+└── .gitignore
+```
+
+---
+
+# Installation
+
+## Prerequisites
+
+Before running the project, ensure the following are installed:
+
+- Python 3.10+
+- ClamAV
+- AWS CLI
+- An AWS account
+- IAM user or role with appropriate permissions
+- boto3
+- python-dotenv
+
+---
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/Evatee-coder/amazon-s3-malware-scanner.git
+
+cd amazon-s3-malware-scanner
+```
+
+---
+
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Install ClamAV
+
+Ubuntu
+
+```bash
+sudo apt update
+
+sudo apt install clamav clamav-daemon
+```
+
+Verify installation
+
+```bash
+clamscan --version
+```
+
+---
+
+## Update Virus Definitions
+
+```bash
+python3 main2.py update
+```
+
+or
+
+```bash
+sudo freshclam
+```
+
+Example
+
+```text
+ClamAV update process started...
+
+Database updated.
+
+Virus database is up to date.
+```
+
+---
+
+# Configuration
+
+The application loads configuration values from environment variables instead of hardcoding sensitive information.
+
+Example:
+
+```env
+AWS_REGION=us-east-1
+
+LANDING_BUCKET=my-landing-bucket
+
+CLEAN_BUCKET=my-clean-bucket
+
+QUEUE_NAME=malware-alert-queue
+```
+
+Create a `.env` file in the project root.
+
+```bash
+touch .env
+```
+
+Populate the file with your own AWS resources.
+
+---
+
+# AWS Authentication
+
+The project uses the default AWS credential provider chain.
+
+Supported authentication methods include:
+
+- IAM User credentials
+- IAM Roles
+- AWS CloudShell
+- Amazon EC2 Instance Profile
+- AWS CLI credentials
+- AWS SSO
+
+Verify your credentials.
+
+```bash
+aws sts get-caller-identity
+```
+
+Example
+
+```json
+{
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/devops",
+    "UserId": "AIDA..."
+}
+```
+
+---
+
+# Required AWS Services
+
+The solution uses only managed AWS services.
+
+| Service | Purpose |
+|----------|---------|
+| Amazon S3 | Stores uploaded files |
+| Amazon S3 | Stores verified clean files |
+| Amazon SQS | Publishes malware alerts |
+| IAM | Access control |
+| CloudWatch *(future enhancement)* | Monitoring and logging |
+
+---
+
+# Required IAM Permissions
+
+The scanner requires permissions to:
+
+- Read objects
+- Copy objects
+- Tag objects
+- Send SQS messages
+- Discover queue URLs
+
+Example IAM policy
+
+```json
+{
+  "Version":"2012-10-17",
+  "Statement":[
     {
-      "Key": "Scanned",
-      "Value": "True"
+      "Effect":"Allow",
+      "Action":[
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:CopyObject",
+        "s3:PutObjectTagging"
+      ],
+      "Resource":[
+        "arn:aws:s3:::landing-bucket/*",
+        "arn:aws:s3:::clean-bucket/*"
+      ]
     },
     {
-      "Key": "Result",
-      "Value": "CLEAN"
+      "Effect":"Allow",
+      "Action":[
+        "sqs:GetQueueUrl",
+        "sqs:SendMessage"
+      ],
+      "Resource":"*"
     }
   ]
 }
@@ -200,163 +617,563 @@ Example output
 
 ---
 
-# ⚙️ How It Works
+# Running the Scanner
 
-1. Download the target object from Amazon S3.
-2. Scan the file using ClamAV.
-3. Interpret the ClamAV exit code.
-
-| Exit Code | Meaning |
-|-----------|---------|
-| 0 | CLEAN |
-| 1 | INFECTED |
-| 2 | ERROR |
-
-4. Update the S3 object with the scan result.
-
-Example object tags:
-
-| Tag | Value |
-|------|-------|
-| Scanned | True |
-| Result | CLEAN |
-| Result | INFECTED |
-| Result | ERROR |
-
-Applications can inspect these tags before allowing files to be downloaded or processed.
+The project exposes two commands.
 
 ---
 
-# 💻 Tech Stack
-
-| Layer | Technology |
-|--------|------------|
-| Language | Python |
-| AWS SDK | boto3 |
-| Cloud Storage | Amazon S3 |
-| Malware Detection | ClamAV |
-| Metadata | Amazon S3 Object Tags |
-
----
-
-# 🧩 Engineering Challenges
-
-During development, every file—whether clean or infected—was initially tagged as **ERROR**.
-
-The issue was traced to ClamAV's certificate validation. Recent ClamAV versions require a valid certificate directory when loading virus definitions. Without it, the scanner exits with status code **2** before processing any files.
-
-The solution was to configure ClamAV to use a project-local certificate directory through `--cvdcertsdir`, making the scanner portable and independent of system-level configuration. Additional logging was also added to simplify troubleshooting future scan failures.
-
----
-
-# 🚀 Production Roadmap
-
-Future improvements include:
-
-- Event-driven scanning using Amazon S3 Events
-- AWS Lambda deployment
-- Amazon ECS Fargate deployment
-- Docker containerization
-- Terraform Infrastructure as Code
-- Amazon SNS notifications
-- CloudWatch monitoring
-- Automated ClamAV signature updates
-- Dead-letter queue support
-- Multi-bucket support
-
----
-
-# 🛠 Skills Demonstrated
-
-This project demonstrates practical experience with:
-
-### Cloud
-
-- Amazon S3
-- AWS SDK (boto3)
-
-### Security
-
-- Malware scanning
-- ClamAV
-- Secure object validation
-
-### Python
-
-- File processing
-- Error handling
-- AWS automation
-
-### Cloud Engineering
-
-- Object metadata management
-- Production workflow design
-- Cloud-native architecture
-
----
-
-# 🚀 Getting Started
-
-Install dependencies
+## Scan Files
 
 ```bash
-pip install boto3
-sudo apt install clamav clamav-freshclam
-sudo apt-get install clamav clamav-daemon
+python3 main2.py scan
 ```
 
-Update virus definitions
+Example output
+
+```text
+Downloading object...
+
+Scanning file...
+
+Scan complete.
+
+Result: CLEAN
+
+Uploading to clean bucket...
+
+Updating object tags...
+
+Done.
+```
+
+---
+
+## Update Virus Definitions
 
 ```bash
-sudo freshclam
+python3 main2.py update
 ```
 
-Run the scanner
+Example
+
+```text
+Updating ClamAV signatures...
+
+Database updated successfully.
+```
+
+---
+
+# Verifying the Workflow
+
+## Step 1
+
+Upload a clean file.
 
 ```bash
-python3 main.py
+aws s3 cp sample.pdf s3://landing-bucket/
 ```
 
-Retrieve object tags
+Expected result
+
+- File copied to Clean Bucket
+- Tags updated
+- No SQS message
+
+---
+
+## Step 2
+
+Upload the EICAR antivirus test file.
+
+```bash
+aws s3 cp eicar.com s3://landing-bucket/
+```
+
+Expected result
+
+- Malware detected
+- File remains in landing bucket
+- Amazon SQS notification published
+- Tags updated
+
+---
+
+## Step 3
+
+Verify object tags.
 
 ```bash
 aws s3api get-object-tagging \
---bucket <bucket-name> \
---key <object-key>
+--bucket landing-bucket \
+--key sample.pdf
+```
+
+Expected output
+
+```json
+{
+  "TagSet":[
+      {
+        "Key":"Scanned",
+        "Value":"True"
+      },
+      {
+        "Key":"Result",
+        "Value":"CLEAN"
+      }
+  ]
+}
 ```
 
 ---
 
-# 🎯 Why This Project?
+## Step 4
 
-This project demonstrates how cloud-native security workflows can be implemented without introducing unnecessary infrastructure.
+Inspect Amazon SQS.
 
-Instead of persisting scan results in a database, the solution leverages **Amazon S3 Object Tags** to provide a lightweight, scalable mechanism for communicating scan status to downstream applications.
+Expected message
 
-It showcases practical experience with:
+```json
+{
+  "file":"eicar.com",
+  "status":"INFECTED"
+}
+```
 
-- Cloud Security
-- Python Automation
+---
+
+# Engineering Decisions
+
+One of the primary goals of this project was to build a solution that resembles a production-ready workflow rather than a simple proof of concept.
+
+Several design decisions were made to improve maintainability, portability, and operational simplicity.
+
+## Environment Variables
+
+Sensitive values such as bucket names, queue names, and AWS configuration are externalized using environment variables.
+
+**Benefits**
+
+- No hardcoded configuration
+- Easier environment promotion
+- Improved security
+- Simpler deployments
+
+---
+
+## Dynamic Queue Discovery
+
+Instead of storing an SQS Queue URL in the source code, the application dynamically retrieves it by queue name.
+
+**Benefits**
+
+- Works across AWS accounts
+- Eliminates hardcoded URLs
+- Improves portability
+- Simplifies infrastructure changes
+
+---
+
+## Amazon S3 Object Tags
+
+Object Tags were selected to store scan metadata.
+
+Example
+
+```
+Scanned=True
+
+Result=CLEAN
+```
+
+**Benefits**
+
+- No external database required
+- Metadata stays with the object
+- Downstream services can inspect object status directly
+- Lower operational complexity
+
+---
+
+## Separate Landing and Clean Buckets
+
+The project separates uploaded files from verified files.
+
+```
+Landing Bucket
+        │
+        ▼
+Malware Scan
+        │
+        ▼
+Clean Bucket
+```
+
+This pattern prevents downstream applications from accessing files before they have been validated.
+
+---
+
+## Command-Line Interface
+
+The application uses Python's `argparse` module to expose a simple interface.
+
+```bash
+python3 main2.py scan
+
+python3 main2.py update
+```
+
+Advantages
+
+- Easy automation
+- Scriptable
+- Cron-friendly
+- CI/CD ready
+
+---
+
+# Engineering Challenges
+
+During development, several practical challenges were encountered and resolved.
+
+| Challenge | Solution |
+|------------|----------|
+| Keeping configuration portable | Externalized values into environment variables |
+| Avoiding hardcoded queue URLs | Used dynamic queue discovery with `GetQueueUrl` |
+| Preserving scan metadata | Implemented Amazon S3 Object Tags |
+| Separating trusted files | Introduced dedicated clean bucket |
+| Supporting virus updates | Added independent `update` command |
+| Handling scan failures | Classified ClamAV exit codes into CLEAN, INFECTED, and ERROR |
+| Verifying malware detection | Used the EICAR antivirus test file |
+| Improving maintainability | Modularized the scanning workflow and centralized configuration |
+
+---
+
+# Screenshots for this Section
+
+Add the following screenshots to strengthen the implementation section.
+
+| Screenshot | File |
+|------------|------|
+| Environment Variables | `docs/images/env-file.png` |
+| AWS CLI Identity | `docs/images/aws-identity.png` |
+| ClamAV Update | `docs/images/freshclam-update.png` |
+| Clean Scan | `docs/images/clean-scan-terminal.png` |
+| Infected Scan | `docs/images/infected-scan-terminal.png` |
+| Object Tags | `docs/images/object-tags.png` |
+| Amazon SQS Message | `docs/images/sqs-message.png` |
+
+---
+
+# Security Considerations
+
+Security was a key consideration throughout the design of this project. Although this implementation is intended as a portfolio demonstration, it follows several AWS security best practices.
+
+## Current Security Controls
+
+- Environment variables are used instead of hardcoded configuration.
+- Malware scanning is performed before files are promoted to the trusted bucket.
+- Amazon S3 Object Tags record scan status for downstream consumers.
+- Dynamic Amazon SQS queue discovery avoids hardcoded queue URLs.
+- Clean and untrusted files are stored in separate Amazon S3 buckets.
+- Virus definitions are updated independently using `freshclam`.
+- AWS authentication relies on the AWS credential provider chain.
+
+---
+
+## Security Best Practices Applied
+
+| Practice | Status |
+|----------|--------|
+| Least Privilege IAM | ✅ |
+| Environment Variables | ✅ |
+| Separate Trusted Storage | ✅ |
+| Object Metadata Tracking | ✅ |
+| Queue-Based Notifications | ✅ |
+| Dynamic AWS Resource Discovery | ✅ |
+
+---
+
+# Production Considerations
+
+This project demonstrates the core malware-scanning workflow. In a production environment, additional AWS services and operational controls would typically be incorporated to improve scalability, resilience, and observability.
+
+Potential enhancements include:
+
+- Amazon EventBridge or Amazon S3 Event Notifications for event-driven scanning.
+- AWS Lambda for lightweight orchestration.
+- Amazon ECS Fargate for containerized scanning workloads capable of processing large files.
+- Amazon CloudWatch Logs and Metrics for centralized monitoring.
+- Amazon SNS or AWS Chatbot for operational notifications.
+- AWS KMS for encryption of S3 objects and SQS messages.
+- AWS Secrets Manager or AWS Systems Manager Parameter Store for secure configuration management.
+- AWS Step Functions to coordinate complex scanning workflows.
+- Dead-letter queues (DLQs) for failed message processing.
+- Multi-Region deployment for disaster recovery and higher availability.
+
+---
+
+# Future Enhancements
+
+The current implementation intentionally focuses on a lightweight and understandable architecture. Future iterations could extend the solution with the following capabilities.
+
+## Infrastructure as Code
+
+- Provision all AWS resources using Terraform.
+- Support multiple environments (Development, Test, Production).
+- Configure remote Terraform state using Amazon S3.
+- Implement reusable Terraform modules.
+
+---
+
+## Containerization
+
+- Package the scanner as a Docker image.
+- Deploy scanning workloads on Amazon ECS Fargate.
+- Build immutable container images.
+- Store images in Amazon Elastic Container Registry (Amazon ECR).
+
+---
+
+## CI/CD
+
+- GitHub Actions workflow for automated testing.
+- Static code analysis.
+- Automated Docker image builds.
+- Infrastructure deployment using Terraform.
+- Automated application deployment.
+
+---
+
+## Monitoring
+
+- Amazon CloudWatch dashboards.
+- CloudWatch alarms.
+- Structured application logging.
+- Performance metrics.
+- Scan statistics.
+- Operational dashboards.
+
+---
+
+## Security
+
+- KMS encryption.
+- Secrets Manager integration.
+- IAM Roles instead of IAM users.
+- VPC endpoints for Amazon S3.
+- Private networking.
+- Security Hub integration.
+- Amazon GuardDuty integration.
+
+---
+
+# Lessons Learned
+
+Developing this project reinforced several cloud engineering concepts beyond simply integrating AWS services.
+
+Key takeaways include:
+
+- Designing secure file-processing workflows.
+- Managing malware scanning in cloud environments.
+- Using Amazon S3 Object Tags as lightweight metadata.
+- Building asynchronous workflows with Amazon SQS.
+- Externalizing configuration through environment variables.
+- Designing for portability across AWS accounts.
+- Structuring Python applications for maintainability.
+- Separating trusted and untrusted data paths.
+- Applying AWS security best practices.
+- Building solutions with future scalability in mind.
+
+---
+
+# Skills Demonstrated
+
+This project demonstrates practical experience across multiple cloud engineering domains.
+
+## AWS
+
 - Amazon S3
-- AWS SDK
-- Malware Detection
-- Secure File Processing
-- Production-oriented Design
+- Amazon SQS
+- IAM
+- AWS CLI
+- AWS SDK (boto3)
 
 ---
 
-# 👨‍💻 Author
+## Python
 
-**Victor Adetayo Eyelade**
-
-AWS Cloud & DevOps Engineer
-
-GitHub: https://github.com/Evatee-coder
-
-LinkedIn: https://linkedin.com/in/victor-adetayo-eyelade-a98606128
+- Object-oriented programming
+- argparse
+- subprocess
+- boto3
+- Environment variables
+- Exception handling
+- File processing
 
 ---
 
-## ⭐ If you found this project useful...
+## Security
 
-If this repository helped you or you'd like to discuss cloud security, AWS, or DevOps engineering, feel free to connect or leave a ⭐ on the repository.
+- Malware detection
+- ClamAV
+- Secure configuration
+- Object tagging
+- Secure file routing
+- Least privilege access
+
+---
+
+## Cloud Engineering
+
+- Event-driven design concepts
+- Metadata management
+- Queue-based workflows
+- Operational automation
+- Cloud-native application design
+
+---
+
+# Repository Structure
+
+```text
+amazon-s3-malware-scanner/
+│
+├── docs/
+│   └── images/
+│       ├── architecture.png
+│       ├── clean-scan-terminal.png
+│       ├── infected-scan-terminal.png
+│       ├── landing-bucket.png
+│       ├── clean-bucket.png
+│       ├── clean-tags.png
+│       ├── infected-tags.png
+│       ├── sqs-message.png
+│       ├── freshclam-update.png
+│       └── aws-identity.png
+│
+├── main2.py
+├── requirements.txt
+├── .env.example
+├── README.md
+├── LICENSE
+└── .gitignore
+```
+
+---
+
+# Getting Started
+
+Clone the repository.
+
+```bash
+git clone https://github.com/Evatee-coder/amazon-s3-malware-scanner.git
+
+cd amazon-s3-malware-scanner
+```
+
+Install dependencies.
+
+```bash
+pip install -r requirements.txt
+```
+
+Configure your environment variables.
+
+```bash
+cp .env.example .env
+```
+
+Update the ClamAV virus database.
+
+```bash
+python3 main2.py update
+```
+
+Run the scanner.
+
+```bash
+python3 main2.py scan
+```
+
+---
+
+# Contributing
+
+Contributions, suggestions, and improvements are welcome.
+
+If you identify a bug, have an enhancement idea, or would like to extend the project, feel free to:
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Commit your changes.
+4. Open a Pull Request.
+
+---
+
+# License
+
+This project is licensed under the MIT License.
+
+See the `LICENSE` file for details.
+
+---
+
+# Author
+
+## Victor Adetayo Eyelade
+
+**AWS Cloud & DevOps Engineer**
+
+I enjoy designing secure, scalable, and automated cloud platforms using AWS, Terraform, Kubernetes, CI/CD, and modern DevOps practices.
+
+### Connect with me
+
+- **GitHub:** https://github.com/Evatee-coder
+- **LinkedIn:** https://www.linkedin.com/in/victor-adetayo-eyelade-a98606128/
+
+---
+
+# Project Highlights
+
+- Designed a secure malware-scanning workflow using Amazon S3, Amazon SQS, Python, and ClamAV.
+- Implemented automated routing of clean files to a trusted S3 bucket.
+- Published asynchronous malware notifications through Amazon SQS.
+- Recorded scan status using Amazon S3 Object Tags for downstream consumers.
+- Externalized configuration with environment variables for portability.
+- Applied AWS security best practices, including least-privilege access and separation of trusted and untrusted storage.
+- Designed the solution with production-oriented enhancements in mind, including event-driven processing, containerized workloads, Infrastructure as Code, and observability.
+
+
+
+
+# Acknowledgements
+
+This project was built as part of my cloud engineering portfolio to demonstrate practical experience designing secure AWS-based file-processing workflows using Python and managed AWS services.
+
+Special thanks to the open-source communities behind:
+
+- AWS SDK for Python (boto3)
+- ClamAV
+- Python
+- Amazon Web Services
+
+---
+
+# Support
+
+If you found this project useful:
+
+⭐ Star the repository
+
+🍴 Fork the repository
+
+💬 Share feedback or suggestions
+
+🤝 Connect with me on LinkedIn
+
+---
+
+> **Thank you for taking the time to explore this project. If you're interested in AWS, DevOps, Platform Engineering, or Cloud Security, I'd be happy to connect and discuss ideas or collaborate on future projects.**
