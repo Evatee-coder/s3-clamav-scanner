@@ -189,8 +189,7 @@ The screenshots below demonstrate the complete malware-scanning workflow.
 ---
 
 ## Clean File Scan
-
-Upload
+The screenshot below shows the malware scanner successfully processing a clean file. The file is downloaded from the Amazon S3 landing bucket, scanned with ClamAV, identified as **CLEAN**, copied to the clean bucket, and tagged for downstream processing.
 ![Clean Scan](docs/images/clean-scan-terminal.png)
 
 
@@ -228,6 +227,7 @@ Result=CLEAN
 ---
 
 ## Infected File Scan
+The screenshot below demonstrates the scanner detecting an infected file using ClamAV. Instead of promoting the file to the clean bucket, the application classifies it as **INFECTED**, publishes a notification to Amazon SQS, and updates the object's tags to record the scan result.
 ![Infected Scan](docs/images/infected-scan-terminal.png)
 
 
@@ -269,7 +269,6 @@ Result=INFECTED
 ---
 
 ## ClamAV Detection
-
 Clean file
 ![ClamAV Clean](docs/images/clamav-clean.png)
 
@@ -876,30 +875,7 @@ This project demonstrates practical experience across multiple cloud engineering
 ---
 
 # Repository Structure
-
-```text
-amazon-s3-malware-scanner/
-│
-├── docs/
-│   └── images/
-│       ├── architecture.png
-│       ├── clean-scan-terminal.png
-│       ├── infected-scan-terminal.png
-│       ├── landing-bucket.png
-│       ├── clean-bucket.png
-│       ├── clean-tags.png
-│       ├── infected-tags.png
-│       ├── sqs-message.png
-│       ├── freshclam-update.png
-│       └── aws-identity.png
-│
-├── main2.py
-├── requirements.txt
-├── .env.example
-├── README.md
-├── LICENSE
-└── .gitignore
-```
+![Repo Structure](docs/images/repo-structure.png)
 
 ---
 
