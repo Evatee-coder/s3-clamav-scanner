@@ -102,9 +102,6 @@ The project was designed with secure configuration, reusable automation, and por
 
 The screenshots below demonstrate the complete malware-scanning workflow.
 
-## AWS Architecture
-![Architecture](docs/images/s3-malware-scanner-architecture.png)
-
 ## Clean File Scan
 The screenshot below shows the malware scanner successfully processing a clean file. The file is downloaded from the Amazon S3 landing bucket, scanned with ClamAV, identified as **CLEAN**, copied to the clean bucket, and tagged for downstream processing.
 ![Clean Scan](docs/images/clean-scan-terminal.png)
