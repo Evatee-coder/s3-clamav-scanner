@@ -103,7 +103,8 @@ The project was designed with secure configuration, reusable automation, and por
 The screenshots below demonstrate the complete malware-scanning workflow.
 
 ## Clean File Scan
-The screenshot below shows the malware scanner successfully processing a clean file. The file is downloaded from the Amazon S3 landing bucket, scanned with ClamAV, identified as **CLEAN**, copied to the clean bucket, and tagged for downstream processing.
+The screenshot below shows the malware scanner successfully processing a clean file. The file is downloaded from the Amazon S3 landing bucket, scanned with ClamAV, identified as CLEAN, copied to the clean bucket, and tagged for downstream processing.
+
 ![Clean Scan](docs/images/clean-scan-terminal.png)
 ---
 
@@ -119,7 +120,8 @@ The screenshot below shows the malware scanner successfully processing a clean f
 
 
 ## Infected File Scan
-The screenshot below demonstrates the scanner detecting an infected file using ClamAV. Instead of promoting the file to the clean bucket, the application classifies it as **INFECTED**, publishes a notification to Amazon SQS, and updates the object's tags to record the scan result.
+The screenshot below demonstrates the scanner detecting an infected file using ClamAV. Instead of promoting the file to the clean bucket, the application classifies it as INFECTED, publishes a notification to Amazon SQS, and updates the object's tags to record the scan result.
+
 ![Infected Scan](docs/images/infected-scan-terminal.png)
 
 
